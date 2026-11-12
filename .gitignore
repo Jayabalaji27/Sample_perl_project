@@ -1,0 +1,5 @@
+# The application's data: the SQLite file, receipts and exports.
+/data/
+
+# Carton's installed modules.
+/local/

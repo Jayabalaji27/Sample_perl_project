@@ -1,0 +1,14 @@
+# Settings for the Expense Portal. Paths are relative to where it is started.
+
+# The bearer token every /api request must carry. A sample value: change it.
+api_token: demo-token
+
+# The SQLite file. ":memory:" keeps the data only while the application runs.
+database: data/expense_portal.db
+
+# Where receipts and exports are written.
+receipt_dir: data/receipts
+export_dir: data/exports
+
+# A manager decides claims up to this amount; above it, a director.
+approval_limit: 500

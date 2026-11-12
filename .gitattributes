@@ -1,0 +1,2 @@
+# Perl scripts and their shebang lines need LF on every machine.
+* text=auto eol=lf
