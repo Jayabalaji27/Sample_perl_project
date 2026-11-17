@@ -4,9 +4,9 @@ A small expense-claims web service, written in Perl with the
 [Mojolicious](https://github.com/mojolicious/mojo) framework. It is a sample
 for testing security scanners, dependency-graph tools and automated code fixes.
 
-**It is vulnerable on purpose. Never deploy it.** It holds five planted code
+**It is vulnerable on purpose. Never deploy it.** It holds six planted code
 weaknesses and pins three libraries with known advisories. Everything else
-works: the application runs, and its 177 tests pass.
+works: the application runs, and its 198 tests pass.
 
 ## Why this project exists
 
@@ -16,7 +16,8 @@ dependencies, and a framework has no application layers for a dependency graph
 to show. This project is an *application* built on Mojolicious instead, so that
 a scan gives:
 
-- **code findings that are real and fixable**, one for each rule below;
+- **code findings that are real and fixable**, one for each rule below, and one
+  whose fix must change the code that calls it;
 - **library advisories** with versions to upgrade to;
 - **a layered dependency graph**: controllers, services, repositories and models,
   with the calls between them.
@@ -48,12 +49,14 @@ Every `/api` request needs `Authorization: Bearer <api_token>` and an
 | GET | `/health` | `health#check` |
 | GET | `/api/claims` | `claims#list` |
 | POST | `/api/claims` | `claims#create` |
+| GET | `/api/claims/open?category=` | `claims#open_claims` |
 | GET | `/api/claims/:id` | `claims#show` |
 | POST | `/api/claims/:id/approve` | `claims#approve` |
 | POST | `/api/claims/:id/reject` | `claims#reject` |
 | GET | `/api/claims/:id/receipt` | `receipts#show` |
 | PUT | `/api/claims/:id/receipt` | `receipts#upload` |
 | GET | `/api/reports/totals` | `reports#totals` |
+| GET | `/api/reports/status?status=` | `reports#by_status` |
 | POST | `/api/reports/export` | `reports#export` |
 | GET | `/api/employees` | `employees#list` |
 | GET | `/api/employees/:name` | `employees#show` |
@@ -71,7 +74,38 @@ another file calls, and each has a fix that stays inside that sub.
 | `InputOutput::ProhibitTwoArgOpen` | CWE-78 | `Util::Files::read_receipt` | `GET /api/claims/:id/receipt?name=` | Three-argument `open` |
 | `InputOutput::RequireEncodingWithUTF8Layer` | CWE-176 | `Util::Files::write_export` | `POST /api/reports/export` | `:encoding(UTF-8)` in place of `:utf8` |
 
-With all five fixed, Perl::Critic reports nothing and the 177 tests still pass.
+### The one that needs its callers changed
+
+| Policy | CWE | Where | Called from | The fix |
+|---|---|---|---|---|
+| `ValuesAndExpressions::PreventSQLInjection` | CWE-89 | `Repository::ClaimRepository::find_where` | `ClaimService::open_claims_in` (`GET /api/claims/open`) and `ReportService::claims_in_status` (`GET /api/reports/status`) | `find_where ($self, %criteria)` with one fixed SQL statement, and both callers passing criteria |
+
+`find_where` takes a ready-made SQL condition, and both callers build it by
+pasting the request's values into it:
+
+```perl
+$self->claims->find_where("status = 'submitted' AND category = '$category'");
+```
+
+No fix inside `find_where` can tell the values from the SQL around them, so the
+safe fix changes what it takes: named criteria, each bound with a `?`. That is a
+change to its contract, so both callers must change in the same fix:
+
+```perl
+sub find_where ($self, %criteria) { ... }      # one literal SQL statement, every value bound
+$self->claims->find_where(status => 'submitted', category => $category);
+```
+
+Perl::Critic accepts only a statement that is a single literal: a condition
+assembled by joining fragments, even from an allow-list, is still reported. One
+statement with optional conditions does it, for example
+`WHERE (employee = ? OR ? IS NULL) AND (category = ? OR ? IS NULL) AND (status = ? OR ? IS NULL)`.
+
+The dependency graph records both calls (`SDG_CALLS` from each service sub to
+`ClaimRepository#find_where`), so a tool that fixes this finding has to find and
+update both callers.
+
+With all six fixed, Perl::Critic reports nothing and the 198 tests still pass.
 The tests describe what each sub does, not how, so they pass before and after a
 correct fix.
 

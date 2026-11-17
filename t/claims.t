@@ -50,6 +50,15 @@ $t->post_ok('/api/claims' => as('alice') => json => {category => 'equipment', am
 $t->post_ok('/api/claims/3/approve' => as('bob'))->status_is(409)->json_is('/error' => 'A claim over 500 needs a director');
 $t->post_ok('/api/claims/3/approve' => as('carol'))->status_is(200)->json_is('/status' => 'approved');
 
+# The claims waiting for a decision, by category
+$t->post_ok('/api/claims' => as('dave') => json => {category => 'travel', amount => 40})->status_is(201)->json_is('/id' => 4);
+$t->get_ok('/api/claims/open?category=travel' => as('bob'))
+    ->status_is(200)
+    ->json_is('/claims/0/id'       => 4)
+    ->json_is('/claims/0/employee' => 'dave')
+    ->json_hasnt('/claims/1', 'the approved travel claim is not open');
+$t->get_ok('/api/claims/open?category=equipment' => as('bob'))->status_is(200)->json_is('/claims' => [], 'decided claims are not open');
+
 # Employees
 $t->get_ok('/api/employees' => as('alice'))->status_is(200)->json_is('/employees/0/name' => 'alice')->json_is('/employees/2/role' => 'director');
 $t->get_ok('/api/employees/alice' => as('bob'))

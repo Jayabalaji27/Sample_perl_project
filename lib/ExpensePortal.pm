@@ -38,6 +38,7 @@ sub startup ($self) {
 
     $api->get('/claims')->to('claims#list');
     $api->post('/claims')->to('claims#create');
+    $api->get('/claims/open')->to('claims#open_claims');
     $api->get('/claims/:id')->to('claims#show');
     $api->post('/claims/:id/approve')->to('claims#approve');
     $api->post('/claims/:id/reject')->to('claims#reject');
@@ -46,6 +47,7 @@ sub startup ($self) {
     $api->put('/claims/:id/receipt')->to('receipts#upload');
 
     $api->get('/reports/totals')->to('reports#totals');
+    $api->get('/reports/status')->to('reports#by_status');
     $api->post('/reports/export')->to('reports#export');
 
     $api->get('/employees')->to('employees#list');
