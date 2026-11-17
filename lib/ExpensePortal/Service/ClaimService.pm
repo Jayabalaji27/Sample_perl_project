@@ -22,6 +22,11 @@ sub find ($self, $id) {
     return $self->claims->find_by_id($id);
 }
 
+# The claims waiting for a decision in one category, oldest first.
+sub open_claims_in ($self, $category) {
+    return $self->claims->find_where("status = 'submitted' AND category = '$category'");
+}
+
 # A new claim. Returns the stored claim and no errors, or no claim and why.
 sub submit ($self, %input) {
     my $claim = ExpensePortal::Model::Claim->new(

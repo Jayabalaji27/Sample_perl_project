@@ -13,6 +13,14 @@ sub totals ($self) {
     return $self->render(json => {employee => $employee, totals => $totals});
 }
 
+# GET /api/reports/status?employee=alice&status=approved
+sub by_status ($self) {
+    my $employee = $self->param('employee') // $self->stash('employee');
+    my $status   = $self->param('status')   // 'submitted';
+    my $claims   = $self->_service->claims_in_status($employee, $status);
+    return $self->render(json => {employee => $employee, status => $status, claims => [map { $_->to_hash } @{$claims}]});
+}
+
 # POST /api/reports/export?employee=alice
 sub export ($self) {
     my $employee = $self->param('employee') // $self->stash('employee');

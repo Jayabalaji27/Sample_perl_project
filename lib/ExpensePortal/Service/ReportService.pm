@@ -27,6 +27,11 @@ sub totals_by_category ($self, $employee, $rule = 'ceil') {
     return {map { $_ => $self->round_amount($total{$_}, $rule) } sort keys %total};
 }
 
+# An employee's claims in one status ("submitted", "approved", "rejected"), oldest first.
+sub claims_in_status ($self, $employee, $status) {
+    return $self->claims->find_where("employee = '$employee' AND status = '$status'");
+}
+
 # How many lines an export file has, as the system counts them.
 sub export_line_count ($self, $file) {
     my $dir    = $self->export_dir;

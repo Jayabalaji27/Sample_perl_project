@@ -21,6 +21,16 @@ $t->get_ok('/api/reports/totals?employee=bob' => as('alice'))->status_is(200)->j
 $t->get_ok('/api/reports/totals?employee=nobody' => as('alice'))->status_is(200)->json_is('/totals' => {});
 $t->get_ok('/api/reports/totals?rounding=nonsense' => as('alice'))->status_is(400)->json_is('/error' => 'Unknown rounding rule');
 
+# Claims in one status
+$t->get_ok('/api/reports/status?status=submitted' => as('alice'))
+    ->status_is(200)
+    ->json_is('/employee'    => 'alice')
+    ->json_is('/status'      => 'submitted')
+    ->json_is('/claims/0/id' => 1, 'the oldest claim first')
+    ->json_is('/claims/2/id' => 3)
+    ->json_hasnt('/claims/3', 'only her own claims');
+$t->get_ok('/api/reports/status?employee=bob&status=approved' => as('alice'))->status_is(200)->json_is('/claims' => []);
+
 # Export
 $t->post_ok('/api/reports/export' => as('alice'))
     ->status_is(200)

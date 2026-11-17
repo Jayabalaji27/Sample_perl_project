@@ -23,6 +23,16 @@ sub find_by_id ($self, $id) {
     return $row ? ExpensePortal::Model::Claim->from_row($row) : undef;
 }
 
+# The claims that match a condition, oldest first. The services' list queries
+# share it.
+sub find_where ($self, $condition) {
+    my $rows = $self->dbh->selectall_arrayref(
+        "SELECT id, employee, category, amount, status FROM claims WHERE $condition ORDER BY id",
+        {Slice => {}},
+    );
+    return [map { ExpensePortal::Model::Claim->from_row($_) } @{$rows}];
+}
+
 # Stores a new claim and returns its id.
 sub add ($self, $claim) {
     $self->dbh->do(

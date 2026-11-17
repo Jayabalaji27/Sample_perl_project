@@ -13,6 +13,12 @@ sub list ($self) {
     return $self->render(json => {claims => [map { $_->to_hash } @{$claims}]});
 }
 
+# GET /api/claims/open?category=travel
+sub open_claims ($self) {
+    my $claims = $self->_service->open_claims_in($self->param('category') // 'other');
+    return $self->render(json => {claims => [map { $_->to_hash } @{$claims}]});
+}
+
 # GET /api/claims/:id
 sub show ($self) {
     my $claim = $self->_load or return;
